@@ -1,28 +1,28 @@
 const IMAGE_INTERVAL_MS = 42;
 
-const drawObjects = (video, canvas, objects) => {
-    const ctx = canvas.getContext('2d');
+// const drawObjects = (video, canvas, objects) => {
+//     const ctx = canvas.getContext('2d');
 
-    ctx.width = video.videoWidth;
-    ctx.height = video.videoHeight;
+//     ctx.width = video.videoWidth;
+//     ctx.height = video.videoHeight;
 
-    ctx.beginPath();
-    ctx.clearRect(0, 0, ctx.width, ctx.height);
-    for (const object of objects.objects) {
-        const [x1, y1, x2, y2] = object.box;
-        const label = object.label;
-        ctx.strokeStyle = '#49fb35';
-        ctx.beginPath();
-        ctx.rect(x1, y1, x2 - x1, y2 - y1);
-        ctx.stroke();
+//     ctx.beginPath();
+//     ctx.clearRect(0, 0, ctx.width, ctx.height);
+//     for (const object of objects.objects) {
+//         const [x1, y1, x2, y2] = object.box;
+//         const label = object.label;
+//         ctx.strokeStyle = '#49fb35';
+//         ctx.beginPath();
+//         ctx.rect(x1, y1, x2 - x1, y2 - y1);
+//         ctx.stroke();
 
-        ctx.font = 'bold 16px sans-serif';
-        ctx.fillStyle = '#ff0000';
-        ctx.fillText(label, x1 - 5, y1 - 5);
-    }
-};
+//         ctx.font = 'bold 16px sans-serif';
+//         ctx.fillStyle = '#ff0000';
+//         ctx.fillText(label, x1 - 5, y1 - 5);
+//     }
+// };
 
-const startObjectDetection = (video, canvas, deviceId) => {
+const startObjectDetection = (video, canvas, image, deviceId) => {
     const socket = new WebSocket(`ws://${location.host}/object-detection`);
     let intervalId;
 
@@ -62,7 +62,8 @@ const startObjectDetection = (video, canvas, deviceId) => {
 
     // Listen for messages
     socket.addEventListener('message', function(event){
-        drawObjects(video, canvas, JSON.parse(event.data));
+        // drawObjects(video, canvas, JSON.parse(event.data));
+        image.setAttribute('src', event.data);
     });
 
     socket.addEventListener('close', function(){
@@ -76,6 +77,7 @@ const startObjectDetection = (video, canvas, deviceId) => {
 window.addEventListener('DOMContentLoaded', (event) => {
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
+    const image = document.getElementById('processed-image');
     const cameraSelect = document.getElementById('camera-select');
     let socket;
 
@@ -102,6 +104,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
         }
 
         const deviceId = cameraSelect.selectedOptions[0].value;
-        socket = startObjectDetection(video, canvas, deviceId);
+        socket = startObjectDetection(video, canvas, image, deviceId);
     })
 });

@@ -3,48 +3,43 @@ import asyncio
 import contextlib
 from pathlib import Path
 
+import cv2
+import base64
 import torch
+import numpy as np
+from io import BytesIO
 from PIL import Image
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+from pred_models import ObjectDetection, ObjectSegmentation
 from pydantic_models import Object, Objects
-from transformers import YolosForObjectDetection, YolosImageProcessor
+from typing import List
 
-class ObjectDetection:
-    image_processor: YolosImageProcessor | None = None
-    model: YolosForObjectDetection | None = None
+def bin_mask_from_cls_idx(full_mask: torch.Tensor, cls_idx_list: List[int]) -> torch.Tensor:
+    mask = full_mask.clone()
+    for i in cls_idx_list:
+        mask[mask==i] = 255
+    mask[mask!=255] = 0
+    return mask
 
-    def load_model(self) -> None:
-        self.image_processor = YolosImageProcessor.from_pretrained("hustvl/yolos-tiny")
-        self.model = YolosForObjectDetection.from_pretrained("hustvl/yolos-tiny")
+def array_to_encoded_str(image: np.ndarray):
+    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+    result, byte_data = cv2.imencode(".jpg", image, encode_param)
+    img_str = base64.encodebytes(byte_data).decode('utf-8')
+    return img_str
 
-    def predict(self, image:Image.Image) -> Objects:
-        if not self.image_processor or not self.model:
-            raise RuntimeError("Model is not loaded")
-        inputs = self.image_processor(images=image, return_tensors='pt')
-        outputs = self.model(**inputs)
+# pred_model = ObjectDetection()
+pred_model = ObjectSegmentation()
 
-        target_sizes = torch.tensor([image.size[::-1]])
-        results = self.image_processor.post_process_object_detection(
-            outputs, target_sizes=target_sizes
-        )[0]
-
-        objects: list[Object] = []
-        for score, label, box in zip(results['scores'], results['labels'], results['boxes']):
-            if score > 0.6:
-                box_values = box.tolist()
-                label = self.model.config.id2label[label.item()]
-                print('Detected:', label)
-                objects.append(Object(box=box_values, label=label))
-        return Objects(objects=objects)
-    
-object_detection = ObjectDetection()
+### Hardcoded for now, later this will receive from UI ###
+keep_obj_idxs = [8, 15]
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    object_detection.load_model()
+    pred_model.load_model()
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -68,9 +63,19 @@ async def receive(websocket: WebSocket, queue: asyncio.Queue):
 async def detect(websocket: WebSocket, queue: asyncio.Queue):
     while True:
         bytes = await queue.get()
-        image = Image.open(io.BytesIO(bytes))
-        objects = object_detection.predict(image)
-        await websocket.send_json(objects.model_dump())
+        # image = Image.open(io.BytesIO(bytes))
+        image_array = np.frombuffer(bytes, np.uint8)
+        image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+        all_mask = pred_model.predict(image)
+        # replace background
+        selected_mask = bin_mask_from_cls_idx(all_mask, keep_obj_idxs)
+        bg_image = np.random.randint(0, 255, size=(image.shape[0], image.shape[1], 1), dtype=np.uint8)
+        final_img = np.where(np.expand_dims(selected_mask, 2), image, bg_image)
+        # encode image to base64
+        final_img_str = array_to_encoded_str(final_img)
+        b64_src = "data:image/jpg;base64,"
+        processed_img_data = b64_src + final_img_str
+        await websocket.send_text(processed_img_data)
 
 @app.websocket('/object-detection')
 async def ws_object_detection(websocket: WebSocket):
