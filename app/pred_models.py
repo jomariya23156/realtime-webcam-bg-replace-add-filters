@@ -1,3 +1,4 @@
+import cv2
 import torch
 import numpy as np
 from PIL import Image
@@ -5,6 +6,8 @@ from PIL import Image
 from transformers import YolosForObjectDetection, YolosImageProcessor
 from transformers import MobileViTFeatureExtractor, MobileViTForSemanticSegmentation
 from pydantic_models import Object, Objects
+
+import mediapipe as mp
 
 class ObjectDetection:
     image_processor: YolosImageProcessor | None = None
@@ -51,3 +54,17 @@ class ObjectSegmentation:
         target_sizes = [image.shape[:2]]
         results = self.image_processor.post_process_semantic_segmentation(outputs, target_sizes=target_sizes)[0]
         return results
+    
+class MPSelfieSegmentation:
+    model: mp.solutions.selfie_segmentation.SelfieSegmentation | None = None
+
+    def load_model(self) -> None:
+        self.model = mp.solutions.selfie_segmentation.SelfieSegmentation(model_selection=1)
+
+    def predict(self, image: np.ndarray, thr: float=0.5) -> np.ndarray:
+        if not self.model:
+            raise RuntimeError("Model is not loaded")
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        result = self.model.process(image)
+        mask = result.segmentation_mask > thr
+        return mask

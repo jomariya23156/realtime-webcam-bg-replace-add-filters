@@ -14,9 +14,11 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from pred_models import ObjectDetection, ObjectSegmentation
+from pred_models import ObjectDetection, ObjectSegmentation, MPSelfieSegmentation
 from pydantic_models import Object, Objects
 from typing import List
+
+import mediapipe as mp
 
 def bin_mask_from_cls_idx(full_mask: torch.Tensor, cls_idx_list: List[int]) -> torch.Tensor:
     mask = full_mask.clone()
@@ -31,8 +33,12 @@ def array_to_encoded_str(image: np.ndarray):
     img_str = base64.encodebytes(byte_data).decode('utf-8')
     return img_str
 
-# pred_model = ObjectDetection()
-pred_model = ObjectSegmentation()
+model_source = 'mediapipe' # 'mediapipe' or 'hugging_face'
+if model_source == 'mediapipe':
+    pred_model = MPSelfieSegmentation()
+elif model_source == 'hugging_face':
+    # pred_model = ObjectDetection()
+    pred_model = ObjectSegmentation()
 
 ### Hardcoded for now, later this will receive from UI ###
 keep_obj_idxs = [8, 15]
@@ -57,6 +63,7 @@ async def receive(websocket: WebSocket, queue: asyncio.Queue):
         bytes = await websocket.receive_bytes()
         try:
             queue.put_nowait(bytes)
+            print('Added to queue')
         except asyncio.QueueFull:
             pass
 
@@ -66,9 +73,13 @@ async def detect(websocket: WebSocket, queue: asyncio.Queue):
         # image = Image.open(io.BytesIO(bytes))
         image_array = np.frombuffer(bytes, np.uint8)
         image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-        all_mask = pred_model.predict(image)
+        # run a prediction
+        if model_source == 'mediapipe':
+            selected_mask = pred_model.predict(image)
+        elif model_source == 'hugging_face':
+            all_mask = pred_model.predict(image)
+            selected_mask = bin_mask_from_cls_idx(all_mask, keep_obj_idxs)
         # replace background
-        selected_mask = bin_mask_from_cls_idx(all_mask, keep_obj_idxs)
         bg_image = np.random.randint(0, 255, size=(image.shape[0], image.shape[1], 1), dtype=np.uint8)
         final_img = np.where(np.expand_dims(selected_mask, 2), image, bg_image)
         # encode image to base64
