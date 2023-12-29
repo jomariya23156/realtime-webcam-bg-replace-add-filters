@@ -1,6 +1,7 @@
 import cv2
 import torch
 import numpy as np
+import tensorflow as tf
 from PIL import Image
 
 from transformers import YolosForObjectDetection, YolosImageProcessor
@@ -68,3 +69,45 @@ class MPSelfieSegmentation:
         result = self.model.process(image)
         mask = result.segmentation_mask > thr
         return mask
+    
+class CartoonGAN:
+    # ref: https://www.kaggle.com/code/kerneler/cartoongan
+    model = None
+    model_dict = {
+        "dr": "./models/CartoonGAN/dr.tflite",
+        "int8": "./models/CartoonGAN/int8.tflite",
+        "fp16": "./models/CartoonGAN/fp16.tflite"
+    }
+
+    def load_model(self, model_type: str='dr') -> None:
+        self.model = tf.lite.Interpreter(model_path=self.model_dict[model_type])
+        self.model_type = model_type
+
+    def convert_image(self, image: np.ndarray) -> tf.Tensor:
+        img = image.copy()
+        img = img.astype(np.float32) / 127.5 - 1
+        img = np.expand_dims(img, 0)
+        img = tf.convert_to_tensor(img)
+        return img
+
+    def preprocess_image(self, image: tf.Tensor, target_dim: int=224) -> tf.Tensor:
+        # here we don't care about preserving the aspect ratio
+        image = tf.image.resize(image, (target_dim, target_dim))
+        return image    
+
+    def predict(self, image: np.ndarray) -> np.ndarray:
+        if not self.model:
+            raise RuntimeError("Model is not loaded")
+        tensor_img = self.convert_image(image)
+        if self.model_type == "fp16":
+            preprocessed_img = self.preprocess_image(tensor_img, target_dim=224) 
+        else:
+            preprocessed_img = self.preprocess_image(tensor_img, target_dim=512)
+        input_details = self.model.get_input_details()
+        self.model.allocate_tensors()
+        self.model.set_tensor(input_details[0]['index'], preprocessed_img)
+        self.model.invoke()
+        raw_prediction = self.model.tensor(self.model.get_output_details()[0]['index'])()
+        output = (np.squeeze(raw_prediction)+1.0)*127.5
+        output = np.clip(output, 0, 255).astype(np.uint8)
+        return output

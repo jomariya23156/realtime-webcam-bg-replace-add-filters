@@ -9,3 +9,5 @@ transformers[torch]
 uvicorn[standard]
 gunicorn
 python-multipart
+scikit-learn==1.0.2
+tensorflow==2.10.0
