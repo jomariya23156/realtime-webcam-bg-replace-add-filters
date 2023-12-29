@@ -8,3 +8,4 @@ pydantic
 transformers[torch]
 uvicorn[standard]
 gunicorn
+python-multipart

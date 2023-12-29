@@ -1,0 +1,84 @@
+/* body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+} */
+
+#gallery-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 600px;
+    margin: auto;
+}
+
+.image {
+    width: 200px;
+    height: 200px;
+    cursor: pointer;
+    border: 2px solid #ccc;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+}
+
+.image:hover {
+    border-color: #3498db;
+}
+
+.selected-image {
+    border-color: #3498db;
+}
+
+.upload-placeholder {
+    width: 200px;
+    height: 200px;
+    border: 2px dashed #ccc;
+    box-sizing: border-box;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.3s ease;
+}
+
+.upload-placeholder:hover {
+    border-color: #3498db;
+}
+
+#file-input {
+    display: none;
+}
+
+#preview-container {
+    max-width: 600px;
+    margin: 20px auto;
+    text-align: center;
+}
+
+#preview-container img {
+    max-width: 100%;
+    height: auto;
+    margin-top: 10px;
+    border: 2px solid #3498db;
+    box-sizing: border-box;
+}
+
+#submit-button {
+    background-color: #3498db;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+}
+
+#submit-button:hover {
+    background-color: #267bb5;
+}

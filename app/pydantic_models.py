@@ -6,3 +6,6 @@ class Object(BaseModel):
 
 class Objects(BaseModel):
     objects: list[Object]
+
+class Message(BaseModel):
+    message: str

@@ -6,19 +6,31 @@ from pathlib import Path
 import cv2
 import base64
 import torch
+import logging
 import numpy as np
 from io import BytesIO
 from PIL import Image
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, UploadFile, File
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 
 from pred_models import ObjectDetection, ObjectSegmentation, MPSelfieSegmentation
-from pydantic_models import Object, Objects
+from pydantic_models import Object, Objects, Message
 from typing import List
-
 import mediapipe as mp
+
+def setup_logger():
+    FORMAT = logging.Formatter(
+    '%(asctime)s | %(levelname)-8s | %(filename)s:%(lineno)-3d | %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    print(f'Created logger with name {__name__}')
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setFormatter(FORMAT)
+    logger.addHandler(ch)
+    return logger
 
 def bin_mask_from_cls_idx(full_mask: torch.Tensor, cls_idx_list: List[int]) -> torch.Tensor:
     mask = full_mask.clone()
@@ -42,6 +54,8 @@ elif model_source == 'hugging_face':
 
 ### Hardcoded for now, later this will receive from UI ###
 keep_obj_idxs = [8, 15]
+logger = setup_logger()
+bg_img = None
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -49,6 +63,18 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "http://localhost",
+    "http://localhost:8000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # setup static and template
 app.mount('/static', StaticFiles(directory='static'), name='static')
@@ -58,30 +84,55 @@ templates = Jinja2Templates(directory='templates')
 async def index(request: Request):
     return templates.TemplateResponse('index.html', {'request': request})
 
+@app.post('/change_bg', response_model=Message, responses={404: {"model": Message}})
+async def change_bg(request: Request, file: UploadFile = File(...)):
+    global bg_img
+    logger.info('CHANGE BG REQUEST')
+    try:
+        image_bytes = await file.read()
+        image_array = np.frombuffer(image_bytes, np.uint8)
+        new_bg = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+        if new_bg is None:
+            raise ValueError("Reading input image return None")
+        bg_img = new_bg
+        resp_message = "Successfully updated the background image"
+        return {"message": resp_message}
+    except Exception as e:
+        logger.exception(f'Reading image file failed with exception:\n {e}')
+        resp_code = 404
+        resp_message = "Reading input image file failed. Incorrect or unsupported image types."
+        return JSONResponse(status_code=resp_code, content={"message": resp_message})
+
 async def receive(websocket: WebSocket, queue: asyncio.Queue):
     while True:
         bytes = await websocket.receive_bytes()
         try:
             queue.put_nowait(bytes)
-            print('Added to queue')
+            # logger.info('Added to queue')
         except asyncio.QueueFull:
             pass
 
 async def detect(websocket: WebSocket, queue: asyncio.Queue):
+    global bg_img
     while True:
         bytes = await queue.get()
         # image = Image.open(io.BytesIO(bytes))
         image_array = np.frombuffer(bytes, np.uint8)
         image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-        # run a prediction
-        if model_source == 'mediapipe':
-            selected_mask = pred_model.predict(image)
-        elif model_source == 'hugging_face':
-            all_mask = pred_model.predict(image)
-            selected_mask = bin_mask_from_cls_idx(all_mask, keep_obj_idxs)
-        # replace background
-        bg_image = np.random.randint(0, 255, size=(image.shape[0], image.shape[1], 1), dtype=np.uint8)
-        final_img = np.where(np.expand_dims(selected_mask, 2), image, bg_image)
+        if bg_img is not None:
+            # run a prediction
+            if model_source == 'mediapipe':
+                selected_mask = pred_model.predict(image)
+            elif model_source == 'hugging_face':
+                all_mask = pred_model.predict(image)
+                selected_mask = bin_mask_from_cls_idx(all_mask, keep_obj_idxs)
+            # replace background
+            if bg_img.shape[:2] != image.shape[:2]:
+                bg_img = cv2.resize(bg_img, (image.shape[1], image.shape[0]))
+            # bg2replace = np.random.randint(0, 255, size=(image.shape[0], image.shape[1], 1), dtype=np.uint8)
+            final_img = np.where(np.expand_dims(selected_mask, 2), image, bg_img)
+        else:
+            final_img = image.copy()
         # encode image to base64
         final_img_str = array_to_encoded_str(final_img)
         b64_src = "data:image/jpg;base64,"
