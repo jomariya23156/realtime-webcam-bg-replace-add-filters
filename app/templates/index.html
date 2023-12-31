@@ -9,12 +9,12 @@
     integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
   <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
 
-  <title>Real time object detection</title>
+  <title>Real-time bg replacement & video effects</title>
 </head>
 
 <body>
   <div class="container" style="display: flex;">
-    <h1 class="my-3">Real time object detection</h1>
+    <h1 class="my-3">Real-time bg replacement & video effects</h1>
     <form id="form-connect">
       <div class="input-group mb-3">
         <select id="camera-select"></select>
@@ -41,53 +41,74 @@
           </td>
       </tr>
     </table>
-    
-    <!-- <div class="position-relative" style="width: 640px; height: 480px;">
-      <video id="video"></video>
-      <canvas id="canvas" class="position-absolute top-0 start-0"></canvas>
-    </div>
-    <div class="position-relative" style="width: 640px; height: 480px;">
-      <img id="processed-image"></img>
-    </div> -->
 
-    <div id="gallery-container">
+    <div id="options-and-filters" style="margin-top: 20px;">
+      <div id="cartoonifier-form">
+        <label>Select Cartoonifier Option:</label>
+        <div>
+          <label>
+            <input type="radio" name="cartoonifier-option" value="disable" checked> Disable
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="radio" name="cartoonifier-option" value="opencv"> OpenCV
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="radio" name="cartoonifier-option" value="tflite"> TFlite
+          </label>
+        </div>
+      </div>
+
+      <div id="image-filters" style="margin-top: 20px;">
+        <div style="font-weight: bold;">Image filters:</div> 
+        <div style="display: flex; justify-content: space-between;">
+          <div style="width: 48%;">
+            <label for="brightness">Brightness:</label>
+            <input type="range" id="brightness" name="brightness" min="0" max="200" value="100">
+          </div>
+          <div style="width: 48%;">
+            <label for="contrast">Contrast:</label>
+            <input type="range" id="contrast" name="contrast" min="0" max="200" value="100">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between;">
+          <div style="width: 48%;">
+            <label for="grayscale">Grayscale:</label>
+            <input type="range" id="grayscale" name="grayscale" min="0" max="100" value="0">
+          </div>
+          <div style="width: 48%;">
+            <label for="saturate">Saturate:</label>
+            <input type="range" id="saturate" name="saturate" min="0" max="200" value="100">
+          </div>
+        </div>
+
+        <button id="reset-filters" onclick="resetFilters()" style="margin-top: 10px;">Reset to Default</button>
+      </div>
+    </div>
+
+    <div id="gallery-container" style="margin-top: 20px;">
       <div class="image" onclick="selectImage('/static/assets/image1.jpeg')" id="image1">
-          <img src="/static/assets/image1.jpeg" alt="Image 1" style="width: 100%; height: 100%;">
+        <img src="/static/assets/image1.jpeg" alt="Image 1" style="width: 100%; height: 100%;">
       </div>
       <div class="image" onclick="selectImage('/static/assets/image2.jpeg')" id="image2">
-          <img src="/static/assets/image2.jpeg" alt="Image 2" style="width: 100%; height: 100%;">
+        <img src="/static/assets/image2.jpeg" alt="Image 2" style="width: 100%; height: 100%;">
       </div>
       <div class="image" onclick="selectImage('/static/assets/image3.jpeg')" id="image3">
-          <img src="/static/assets/image3.jpeg" alt="Image 3" style="width: 100%; height: 100%;">
+        <img src="/static/assets/image3.jpeg" alt="Image 3" style="width: 100%; height: 100%;">
       </div>
       <label class="upload-placeholder" for="file-input">
-          <span>Upload Image</span>
-          <input type="file" id="file-input" accept="image/*" onchange="uploadPreview(event)">
+        <span>Upload Image</span>
+        <input type="file" id="file-input" accept="image/*" onchange="uploadPreview(event)">
       </label>
     </div>
-  
-  <div id="preview-container"></div>
-  
-  <button id="submit-button" onclick="submitRequest()">Submit</button>
 
-  <div id="cartoonifier-form" style="margin-top: 20px;">
-    <label>Select Cartoonifier Option:</label>
-    <div>
-      <label>
-        <input type="radio" name="cartoonifier-option" value="disable" checked> Disable
-      </label>
-    </div>
-    <div>
-      <label>
-        <input type="radio" name="cartoonifier-option" value="opencv"> OpenCV
-      </label>
-    </div>
-    <div>
-      <label>
-        <input type="radio" name="cartoonifier-option" value="tflite"> TFlite
-      </label>
-    </div>
-  </div>
+    <div id="preview-container" style="margin-top: 20px;"></div>
+
+    <button id="submit-button" onclick="submitRequest()" style="margin-top: 20px;">Change BG</button>
 
   </div>
   

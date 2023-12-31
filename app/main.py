@@ -33,7 +33,7 @@ elif model_source == 'hugging_face':
 
 cartoonifier = CartoonGAN()
 cartoonifier_type = 'fp16'
-cartoonify = None # options: opencv, tflite
+cartoonify = None
 cartoonify_options = ['tflite', 'opencv', 'disable']
 
 ### Hardcoded for now, later this will receive from UI ###

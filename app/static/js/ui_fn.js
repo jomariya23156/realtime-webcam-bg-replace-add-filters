@@ -146,3 +146,31 @@ function submitCartoonifierOption(event) {
     console.error('Error:', error);
     });
 }
+
+// Listen for changes in the filter sliders and apply filters to the processed image
+const filterSliders = document.querySelectorAll('#image-filters input');
+filterSliders.forEach(slider => slider.addEventListener('input', applyImageFilters));
+
+function applyImageFilters() {
+  const brightnessValue = document.getElementById('brightness').value;
+  const contrastValue = document.getElementById('contrast').value;
+  const grayscaleValue = document.getElementById('grayscale').value;
+  const saturateValue = document.getElementById('saturate').value;
+
+  const filters = `brightness(${brightnessValue}%) contrast(${contrastValue}%) grayscale(${grayscaleValue}%) saturate(${saturateValue}%)`;
+
+  // Apply the filters to the processed image
+  const processedImage = document.getElementById('processed-image');
+  processedImage.style.filter = filters;
+}
+
+function resetFilters() {
+    // Set default values for each filter
+    document.getElementById('brightness').value = 100;
+    document.getElementById('contrast').value = 100;
+    document.getElementById('grayscale').value = 0;
+    document.getElementById('saturate').value = 100;
+
+    // Apply the default filters
+    applyImageFilters();
+  }
