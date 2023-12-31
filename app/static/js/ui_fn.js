@@ -127,3 +127,22 @@ async function submitRequest() {
         console.error('Error:', error);
     });
 }
+
+const radioOptions = document.querySelectorAll('input[name="cartoonifier-option"]');
+radioOptions.forEach(radio => radio.addEventListener('change', submitCartoonifierOption));
+
+function submitCartoonifierOption(event) {
+    const selectedOption = event.target.value;
+    const apiUrl = `http://localhost:8000/change_cartoonify/${selectedOption}`;
+
+    fetch(apiUrl, {
+    method: 'PUT',
+    })
+    .then(response => response.json())
+    .then(data => {
+    console.log('Cartoonifier Option Response:', data);
+    })
+    .catch(error => {
+    console.error('Error:', error);
+    });
+}

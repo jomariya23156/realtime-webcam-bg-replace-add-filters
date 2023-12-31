@@ -13,7 +13,7 @@
 </head>
 
 <body>
-  <div class="container">
+  <div class="container" style="display: flex;">
     <h1 class="my-3">Real time object detection</h1>
     <form id="form-connect">
       <div class="input-group mb-3">
@@ -21,13 +21,34 @@
         <button class="btn btn-success" type="submit" id="button-start">Start</button>
       </div>
     </form>
-    <div class="position-relative" style="width: 640px; height: 480px;">
+
+    <table>
+      <tr>
+        <td>
+          Input
+        </td>
+        <td>
+          Output
+        </td>
+      </tr>
+      <tr>
+          <td>
+            <video id="video"></video>
+            <canvas id="canvas" class="position-absolute top-0 start-0"></canvas>
+          </td>
+          <td>
+            <img id="processed-image"></img>
+          </td>
+      </tr>
+    </table>
+    
+    <!-- <div class="position-relative" style="width: 640px; height: 480px;">
       <video id="video"></video>
       <canvas id="canvas" class="position-absolute top-0 start-0"></canvas>
     </div>
     <div class="position-relative" style="width: 640px; height: 480px;">
       <img id="processed-image"></img>
-    </div>
+    </div> -->
 
     <div id="gallery-container">
       <div class="image" onclick="selectImage('/static/assets/image1.jpeg')" id="image1">
@@ -43,11 +64,30 @@
           <span>Upload Image</span>
           <input type="file" id="file-input" accept="image/*" onchange="uploadPreview(event)">
       </label>
-  </div>
+    </div>
   
   <div id="preview-container"></div>
   
   <button id="submit-button" onclick="submitRequest()">Submit</button>
+
+  <div id="cartoonifier-form" style="margin-top: 20px;">
+    <label>Select Cartoonifier Option:</label>
+    <div>
+      <label>
+        <input type="radio" name="cartoonifier-option" value="disable" checked> Disable
+      </label>
+    </div>
+    <div>
+      <label>
+        <input type="radio" name="cartoonifier-option" value="opencv"> OpenCV
+      </label>
+    </div>
+    <div>
+      <label>
+        <input type="radio" name="cartoonifier-option" value="tflite"> TFlite
+      </label>
+    </div>
+  </div>
 
   </div>
   

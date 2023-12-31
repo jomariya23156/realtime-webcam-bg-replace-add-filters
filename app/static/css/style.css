@@ -13,8 +13,13 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    max-width: 600px;
+    max-width: 1200px;
     margin: auto;
+    border-radius: 15px; 
+    overflow: hidden; 
+    background-color: #f0f0f0; 
+    margin-top: 20px;
+    padding: 20px;
 }
 
 .image {
@@ -82,3 +87,65 @@
 #submit-button:hover {
     background-color: #267bb5;
 }
+
+.container {
+    flex-direction: column;
+    align-items: center;
+}
+
+table {
+    flex: 1;
+    width: 100%;
+    /* border-collapse: collapse; */
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 10px;
+    text-align: center;
+}
+
+#video, #canvas, #processed-image {
+    width: 320px;
+    height: 240px;
+    /* margin-top: 20px; */
+}
+
+#cartoonifier-form {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #cartoonifier-form label {
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  #cartoonifier-form input[type="radio"] {
+    margin-right: 10px;
+  }
+
+/* New */
+/* .container {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+}
+
+#form-connect {
+    margin-bottom: 20px;
+}
+
+
+#canvas {
+    border: 2px solid #3498db;
+    border-radius: 5px;
+    margin-right: 10px;
+}
+
+#processed-image {
+    border: 2px solid #3498db;
+    border-radius: 5px;
+} */
