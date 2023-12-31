@@ -97,7 +97,6 @@ async function submitRequest() {
     if (selectedImage) {
         console.log('Request with the prepared image.')
         imageData = selectedImage.src;
-        console.log('imageData:', imageData)
         blob = await readImageFromServer(imageData);
     } else if (uploadedImage) {
         console.log('Request with the uploaded image.')
@@ -112,7 +111,6 @@ async function submitRequest() {
     // Now, you can make a POST request to the dummy API endpoint
     const apiUrl = 'http://127.0.0.1:8000/change_bg';
     const formData = new FormData();
-    console.log('typeof blob:',typeof(blob))
     formData.append('file', blob, 'image.jpg');
 
     fetch(apiUrl, {
@@ -173,4 +171,27 @@ function resetFilters() {
 
     // Apply the default filters
     applyImageFilters();
-  }
+}
+
+function requestResetBg(event) {
+    document.querySelectorAll('.image').forEach(img => img.classList.remove('selected-image'));
+    const previewContainer = document.getElementById('preview-container');
+    const allChilds = previewContainer.getElementsByTagName("*")
+    for (let child of allChilds){
+        previewContainer.removeChild(child)
+    }
+    // previewContainer.getElementsByTagName("*").forEach(ele => previewContainer.removeChild(ele));
+
+    const apiUrl = 'http://localhost:8000/reset_bg';
+
+    fetch(apiUrl, {
+    method: 'POST',
+    })
+    .then(response => response.json())
+    .then(data => {
+    console.log('Reset BG Response:', data);
+    })
+    .catch(error => {
+    console.error('Error:', error);
+    });
+}

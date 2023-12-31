@@ -1,191 +1,205 @@
 #gallery-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    max-width: 1200px;
-    margin: auto;
-    border-radius: 15px; 
-    overflow: hidden; 
-    background-color: #f0f0f0; 
-    margin-top: 20px;
-    padding: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 1200px;
+  margin: auto;
+  border-radius: 15px;
+  overflow: hidden;
+  background-color: #f0f0f0;
+  margin-top: 20px;
+  padding: 20px;
 }
 
 #gallery-container .image {
-    border-radius: 10px;
-    overflow: hidden;
-  }
+  border-radius: 10px;
+  overflow: hidden;
+}
 
 .image {
-    width: 200px;
-    height: 200px;
-    cursor: pointer;
-    border: 2px solid #ccc;
-    box-sizing: border-box;
-    transition: border-color 0.3s ease;
+  width: 200px;
+  height: 200px;
+  cursor: pointer;
+  border: 2px solid #ccc;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
 }
 
 .image:hover {
-    border-color: #3498db;
+  border-color: #3498db;
 }
 
 .selected-image {
-    border-color: #3498db;
+  border-color: #3498db;
 }
 
 .upload-placeholder {
-    width: 200px;
-    height: 200px;
-    border: 2px dashed #ccc;
-    border-radius: 10px;
-    box-sizing: border-box;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: border-color 0.3s ease;
+  width: 200px;
+  height: 200px;
+  border: 2px dashed #ccc;
+  border-radius: 10px;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.3s ease;
 }
 
 .upload-placeholder:hover {
-    border-color: #3498db;
+  border-color: #3498db;
+}
+
+.reset-bg {
+  width: 200px;
+  height: 200px;
+  border: 2px double #ccc;
+  border-radius: 10px;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.3s ease;
 }
 
 #file-input {
-    display: none;
+  display: none;
 }
 
 #preview-container {
-    max-width: 500px;
-    margin: 20px auto;
-    text-align: center;
+  max-width: 500px;
+  margin: 20px auto;
+  text-align: center;
 }
 
 #preview-container img {
-    max-width: 100%;
-    height: auto;
-    margin-top: 10px;
-    border: 2px solid #3498db;
-    box-sizing: border-box;
+  max-width: 100%;
+  height: auto;
+  margin-top: 10px;
+  border: 2px solid #3498db;
+  box-sizing: border-box;
 }
 
 #submit-button {
-    background-color: #3498db;
-    color: #fff;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    transition: background-color 0.3s ease;
+  background-color: #3498db;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  transition: background-color 0.3s ease;
 }
 
 #submit-button:hover {
-    background-color: #267bb5;
+  background-color: #267bb5;
 }
 
 .container {
-    flex-direction: column;
-    align-items: center;
+  flex-direction: column;
+  align-items: center;
 }
 
 table {
-    flex: 1;
-    width: 100%;
-    /* border-collapse: collapse; */
-    margin-top: 20px;
+  flex: 1;
+  width: 100%;
+  margin-top: 20px;
 }
 
-th, td {
-    padding: 10px;
-    text-align: center;
+th,
+td {
+  padding: 10px;
+  text-align: center;
 }
 
-#video, #canvas, #processed-image {
-    width: 320px;
-    height: 240px;
-    /* margin-top: 20px; */
+#video,
+#canvas,
+#processed-image {
+  width: 480px;
+  height: 360px;
 }
 
 #cartoonifier-form {
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
-  #cartoonifier-form label {
-    margin-bottom: 10px;
-    font-weight: bold;
-  }
+#cartoonifier-form label {
+  margin-bottom: 10px;
+  font-weight: bold;
+}
 
-  #cartoonifier-form input[type="radio"] {
-    margin-right: 10px;
-  }
+#cartoonifier-form input[type="radio"] {
+  margin-right: 10px;
+}
 
-  #image-filters {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    max-width: 300px;
-    margin-top: 10px;
-  }
-  
-  #image-filters div {
-    margin-bottom: 10px;
-  }
-  
-  #image-filters label {
-    font-size: 12px;
-    text-align: center;
-    width: 60px;
-    font-weight: bold;
-  }
-  
-  #image-filters input {
-    width: 100%;
-    appearance: none;
-    background-color: #e0e0e0;
-    height: 5px;
-    border-radius: 5px;
-    outline: none;
-  }
-  
-  #image-filters input::-webkit-slider-thumb {
-    appearance: none;
-    width: 15px;
-    height: 15px;
-    background-color: #3498db;
-    border: 1px solid #fff;
-    border-radius: 50%;
-    cursor: pointer;
-  }
+#image-filters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 300px;
+  margin-top: 10px;
+}
 
-  #reset-filters {
-    margin-top: 10px;
-    padding: 5px 10px;
-    background-color: #3498db;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
+#image-filters div {
+  margin-bottom: 10px;
+}
 
-  #reset-filters:hover {
-    background-color: #267bb5;
-  }
+#image-filters label {
+  font-size: 12px;
+  text-align: center;
+  width: 60px;
+  font-weight: bold;
+}
 
-  #options-and-filters {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    max-width: 1200px;
-    margin-top: 20px;
-  }
+#image-filters input {
+  width: 100%;
+  appearance: none;
+  background-color: #e0e0e0;
+  height: 5px;
+  border-radius: 5px;
+  outline: none;
+}
 
-  #cartoonifier-options,
-  #image-filters {
-    width: 48%;
-  }
+#image-filters input::-webkit-slider-thumb {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  background-color: #3498db;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#reset-filters {
+  margin-top: 10px;
+  padding: 5px 10px;
+  background-color: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#reset-filters:hover {
+  background-color: #267bb5;
+}
+
+#options-and-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  max-width: 1200px;
+  margin-top: 20px;
+}
+
+#cartoonifier-options,
+#image-filters {
+  width: 48%;
+}

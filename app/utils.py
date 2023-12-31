@@ -64,7 +64,7 @@ def cartoonify_img(image: np.ndarray, option: str='disable', cartoonifier = None
         # masking edged image with our "BEAUTIFY" image
         cartoonified = cv2.bitwise_and(color_img, color_img, mask=edge_img)
         return cartoonified
-    elif option == 'tflite' and cartoonifier is not None:
+    elif option == 'cartoongan' and cartoonifier is not None:
         ori_size = image.shape[:2]
         cartoonified = cartoonifier.predict(image)
         cartoonified = cv2.resize(cartoonified, (ori_size[1], ori_size[0]))

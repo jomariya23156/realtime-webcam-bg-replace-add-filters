@@ -11,6 +11,7 @@ import threading
 import numpy as np
 from io import BytesIO
 from PIL import Image
+from websockets.exceptions import ConnectionClosed
 from fastapi import (FastAPI, Request, WebSocket, WebSocketDisconnect, 
                      UploadFile, File)
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -34,7 +35,7 @@ elif model_source == 'hugging_face':
 cartoonifier = CartoonGAN()
 cartoonifier_type = 'fp16'
 cartoonify = None
-cartoonify_options = ['tflite', 'opencv', 'disable']
+cartoonify_options = ['cartoongan', 'opencv', 'disable']
 
 ### Hardcoded for now, later this will receive from UI ###
 keep_obj_idxs = [8, 15]
@@ -70,6 +71,15 @@ templates = Jinja2Templates(directory='templates')
 @app.get('/', response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse('index.html', {'request': request})
+
+@app.post('/reset_bg', response_model=Message, responses={404: {"model": Message}})
+async def change_bg():
+    global bg_img
+    logger.info('RESET BG REQUEST')
+    with lock:
+        bg_img = None
+    resp_message = "Successfully reseted the background image"
+    return {"message": resp_message}
 
 @app.post('/change_bg', response_model=Message, responses={404: {"model": Message}})
 async def change_bg(request: Request, file: UploadFile = File(...)):
@@ -135,7 +145,7 @@ async def detect(websocket: WebSocket, queue: asyncio.Queue):
             final_img = np.where(np.expand_dims(selected_mask, 2), image, bg_img)
         else:
             final_img = image.copy()
-        if cartoonify in ['opencv', 'tflite']:
+        if cartoonify in ['opencv', 'cartoongan']:
             final_img = cartoonify_img(final_img, option=cartoonify, cartoonifier=cartoonifier)
         # encode image to base64
         final_img_str = array_to_encoded_str(final_img)
@@ -145,6 +155,8 @@ async def detect(websocket: WebSocket, queue: asyncio.Queue):
 
 @app.websocket('/object-detection')
 async def ws_object_detection(websocket: WebSocket):
+    global bg_img
+    global cartoonify
     await websocket.accept()
     queue: asyncio.Queue = asyncio.Queue(maxsize=1)
     receive_task = asyncio.create_task(receive(websocket, queue))
@@ -158,5 +170,8 @@ async def ws_object_detection(websocket: WebSocket):
             task.cancel()
         for task in done:
             task.result()
-    except WebSocketDisconnect:
-        pass
+    except (WebSocketDisconnect, ConnectionClosed):
+        logger.info('User disconnected')
+        with lock:
+            bg_img = None
+            cartoonify = None
