@@ -1,46 +1,3 @@
-// Function to fetch an image from the server and convert it to data URI
-async function fetchAndConvertToDataURI(imagePath) {
-    try {
-        const response = await fetch(imagePath);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-        }
-
-        const blob = await response.blob();
-        const base64Data = await blobToBase64(blob);
-        return `data:${response.headers.get('content-type')};base64,${base64Data}`;
-    } catch (error) {
-        console.error('Error:', error);
-        return null;
-    }
-}
-
-async function readImageFromServer(imagePath) {
-    try {
-        const response = await fetch(imagePath);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-        }
-
-        const blob = await response.blob();
-        return blob;
-    } catch (error) {
-        console.error('Error:', error);
-        return null;
-    }
-}
-
-// Function to convert base64 to Blob
-function base64ToBlob(base64Data, contentType) {
-    const byteCharacters = atob(base64Data);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], { type: contentType });
-}
-
 function selectImage(imageUrl) {
     // Remove the border from all images
     document.querySelectorAll('.image').forEach(img => img.classList.remove('selected-image'));
@@ -87,64 +44,6 @@ function displayPreview(imageUrl) {
     previewContainer.appendChild(previewImage);
 }
 
-async function submitRequest() {
-    // Gather necessary data (e.g., selected image or uploaded image data)
-    const selectedImage = document.querySelector('.selected-image img');
-    const uploadedImage = document.querySelector('#preview-container img');
-
-    let imageData;
-    let blob;
-    if (selectedImage) {
-        console.log('Request with the prepared image.')
-        imageData = selectedImage.src;
-        blob = await readImageFromServer(imageData);
-    } else if (uploadedImage) {
-        console.log('Request with the uploaded image.')
-        imageData = uploadedImage.src;
-        const base64Data = imageData.split(',')[1]; // Remove the data URI prefix
-        blob = base64ToBlob(base64Data, 'image/jpeg'); // Convert base64 to Blob  
-    } else {
-        console.error('No image selected or uploaded.');
-        return;
-    }
-
-    // Now, you can make a POST request to the dummy API endpoint
-    const apiUrl = 'http://127.0.0.1:8000/change_bg';
-    const formData = new FormData();
-    formData.append('file', blob, 'image.jpg');
-
-    fetch(apiUrl, {
-        method: 'POST',
-        body: formData,
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('API Response:', data);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
-}
-
-const radioOptions = document.querySelectorAll('input[name="cartoonifier-option"]');
-radioOptions.forEach(radio => radio.addEventListener('change', submitCartoonifierOption));
-
-function submitCartoonifierOption(event) {
-    const selectedOption = event.target.value;
-    const apiUrl = `http://localhost:8000/change_cartoonify/${selectedOption}`;
-
-    fetch(apiUrl, {
-    method: 'PUT',
-    })
-    .then(response => response.json())
-    .then(data => {
-    console.log('Cartoonifier Option Response:', data);
-    })
-    .catch(error => {
-    console.error('Error:', error);
-    });
-}
-
 // Listen for changes in the filter sliders and apply filters to the processed image
 const filterSliders = document.querySelectorAll('#image-filters input');
 filterSliders.forEach(slider => slider.addEventListener('input', applyImageFilters));
@@ -171,27 +70,4 @@ function resetFilters() {
 
     // Apply the default filters
     applyImageFilters();
-}
-
-function requestResetBg(event) {
-    document.querySelectorAll('.image').forEach(img => img.classList.remove('selected-image'));
-    const previewContainer = document.getElementById('preview-container');
-    const allChilds = previewContainer.getElementsByTagName("*")
-    for (let child of allChilds){
-        previewContainer.removeChild(child)
-    }
-    // previewContainer.getElementsByTagName("*").forEach(ele => previewContainer.removeChild(ele));
-
-    const apiUrl = 'http://localhost:8000/reset_bg';
-
-    fetch(apiUrl, {
-    method: 'POST',
-    })
-    .then(response => response.json())
-    .then(data => {
-    console.log('Reset BG Response:', data);
-    })
-    .catch(error => {
-    console.error('Error:', error);
-    });
 }

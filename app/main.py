@@ -1,19 +1,12 @@
-import io
 import asyncio
 import contextlib
-from pathlib import Path
 
 import cv2
-import base64
-import torch
-import logging
 import threading
 import numpy as np
-from io import BytesIO
-from PIL import Image
 from websockets.exceptions import ConnectionClosed
 from fastapi import (FastAPI, Request, WebSocket, WebSocketDisconnect, 
-                     UploadFile, File)
+                     UploadFile, File, Depends, Header)
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -21,28 +14,37 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from pred_models import ObjectSegmentation, MPSelfieSegmentation, CartoonGAN
 from pydantic_models import Message
-from typing import List
 from utils import (setup_logger, bin_mask_from_cls_idx, array_to_encoded_str,
                    cartoonify_img)
 
+logger = setup_logger()
+lock = threading.Lock()
+
+# session variables / states
+# consider using in-memory database like Redis or memcached 
+# instead of this variable in the production environment
+session_data = {}
+
+def get_session_token(x_session_token: str = Header(...)):
+    return x_session_token
+
+def get_current_session_vars(token: str = Depends(get_session_token)):
+    # Check if session exists, otherwise create a new one
+    if token not in session_data:
+        session_data[token] = {"bg_img": None, "cartoonify": None}
+    return session_data[token]
+
 model_source = 'mediapipe' # 'mediapipe' or 'hugging_face'
+keep_obj_idxs = None # only for 'hugging_face'
 if model_source == 'mediapipe':
     pred_model = MPSelfieSegmentation()
 elif model_source == 'hugging_face':
-    # pred_model = ObjectDetection()
     pred_model = ObjectSegmentation()
+    keep_obj_idxs = [8, 15]
 
 cartoonifier = CartoonGAN()
-cartoonifier_type = 'fp16'
-cartoonify = None
+cartoonifier_type = 'dr'
 cartoonify_options = ['cartoongan', 'opencv', 'disable']
-
-### Hardcoded for now, later this will receive from UI ###
-keep_obj_idxs = [8, 15]
-
-logger = setup_logger()
-lock = threading.Lock()
-bg_img = None
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -73,17 +75,16 @@ async def index(request: Request):
     return templates.TemplateResponse('index.html', {'request': request})
 
 @app.post('/reset_bg', response_model=Message, responses={404: {"model": Message}})
-async def change_bg():
-    global bg_img
+async def change_bg(session_vars: str = Depends(get_current_session_vars)):
     logger.info('RESET BG REQUEST')
     with lock:
-        bg_img = None
+        session_vars['bg_img'] = None
     resp_message = "Successfully reseted the background image"
     return {"message": resp_message}
 
 @app.post('/change_bg', response_model=Message, responses={404: {"model": Message}})
-async def change_bg(request: Request, file: UploadFile = File(...)):
-    global bg_img
+async def change_bg(request: Request, file: UploadFile = File(...), 
+                    session_vars: str = Depends(get_current_session_vars)):
     logger.info('CHANGE BG REQUEST')
     try:
         image_bytes = await file.read()
@@ -92,7 +93,7 @@ async def change_bg(request: Request, file: UploadFile = File(...)):
         if new_bg is None:
             raise ValueError("Reading input image return None")
         with lock:
-            bg_img = new_bg
+            session_vars['bg_img'] = new_bg
         resp_message = "Successfully updated the background image"
         return {"message": resp_message}
     except Exception as e:
@@ -102,35 +103,31 @@ async def change_bg(request: Request, file: UploadFile = File(...)):
         return JSONResponse(status_code=resp_code, content={"message": resp_message})
     
 @app.put('/change_cartoonify/{option}', response_model=Message, responses={404: {"model": Message}})
-async def change_cartoonify(option: str):
-    global cartoonify
+async def change_cartoonify(option: str, session_vars: str = Depends(get_current_session_vars)):
     logger.info('CHANGE CARTOONIFY OPTION REQUEST')
     if option not in cartoonify_options:
         resp_code = 404
         resp_message = f'Specified option is invalid. Available options: {cartoonify_options}'
         return JSONResponse(status_code=resp_code, content={"message": resp_message})
     with lock:
-        cartoonify = option
+        session_vars['cartoonify'] = option
     resp_message = "Successfully updated the cartoonify option"
     return {"message": resp_message}
 
 async def receive(websocket: WebSocket, queue: asyncio.Queue):
     while True:
-        bytes = await websocket.receive_bytes()
+        bytes = await websocket.receive_bytes() 
         try:
             queue.put_nowait(bytes)
-            # logger.info('Added to queue')
         except asyncio.QueueFull:
             pass
 
-async def detect(websocket: WebSocket, queue: asyncio.Queue):
-    global bg_img
+async def process(websocket: WebSocket, queue: asyncio.Queue, session_vars: dict):
     while True:
         bytes = await queue.get()
-        # image = Image.open(io.BytesIO(bytes))
         image_array = np.frombuffer(bytes, np.uint8)
         image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-        if bg_img is not None:
+        if session_vars['bg_img'] is not None:
             # run a prediction
             if model_source == 'mediapipe':
                 selected_mask = pred_model.predict(image)
@@ -138,32 +135,31 @@ async def detect(websocket: WebSocket, queue: asyncio.Queue):
                 all_mask = pred_model.predict(image)
                 selected_mask = bin_mask_from_cls_idx(all_mask, keep_obj_idxs)
             # replace background
-            if bg_img.shape[:2] != image.shape[:2]:
+            if session_vars['bg_img'].shape[:2] != image.shape[:2]:
                 with lock:
-                    bg_img = cv2.resize(bg_img, (image.shape[1], image.shape[0]))
-            # bg2replace = np.random.randint(0, 255, size=(image.shape[0], image.shape[1], 1), dtype=np.uint8)
-            final_img = np.where(np.expand_dims(selected_mask, 2), image, bg_img)
+                    session_vars['bg_img'] = cv2.resize(session_vars['bg_img'], (image.shape[1], image.shape[0]))
+            final_img = np.where(np.expand_dims(selected_mask, 2), image, session_vars['bg_img'])
         else:
             final_img = image.copy()
-        if cartoonify in ['opencv', 'cartoongan']:
-            final_img = cartoonify_img(final_img, option=cartoonify, cartoonifier=cartoonifier)
+        if session_vars['cartoonify'] in ['opencv', 'cartoongan']:
+            final_img = cartoonify_img(final_img, option=session_vars['cartoonify'], cartoonifier=cartoonifier)
         # encode image to base64
         final_img_str = array_to_encoded_str(final_img)
         b64_src = "data:image/jpg;base64,"
         processed_img_data = b64_src + final_img_str
         await websocket.send_text(processed_img_data)
 
-@app.websocket('/object-detection')
-async def ws_object_detection(websocket: WebSocket):
-    global bg_img
-    global cartoonify
+@app.websocket('/image_processing/{session_token}')
+async def ws_image_processing(websocket: WebSocket, session_token: str):
     await websocket.accept()
+    logger.info(f'session token: {session_token}')
+    session_vars = get_current_session_vars(session_token)
     queue: asyncio.Queue = asyncio.Queue(maxsize=1)
     receive_task = asyncio.create_task(receive(websocket, queue))
-    detect_task = asyncio.create_task(detect(websocket, queue))
+    process_task = asyncio.create_task(process(websocket, queue, session_vars))
     try:
         done, pending = await asyncio.wait(
-            {receive_task, detect_task},
+            {receive_task, process_task},
             return_when=asyncio.FIRST_COMPLETED
         )
         for task in pending:
@@ -172,6 +168,6 @@ async def ws_object_detection(websocket: WebSocket):
             task.result()
     except (WebSocketDisconnect, ConnectionClosed):
         logger.info('User disconnected')
-        with lock:
-            bg_img = None
-            cartoonify = None
+        # Remove session data when user disconnects
+        del session_data[session_token]
+        logger.info(f'Removed session data of session token: {session_token}')
