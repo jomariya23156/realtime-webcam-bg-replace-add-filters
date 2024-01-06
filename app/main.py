@@ -1,13 +1,14 @@
 import asyncio
 import contextlib
 
+import os
 import cv2
 import threading
 import numpy as np
 from websockets.exceptions import ConnectionClosed
 from fastapi import (FastAPI, Request, WebSocket, WebSocketDisconnect, 
                      UploadFile, File, Depends, Header)
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +26,7 @@ lock = threading.Lock()
 # instead of this variable in the production environment
 session_data = {}
 
+# dependencies injection
 def get_session_token(x_session_token: str = Header(...)):
     return x_session_token
 
@@ -69,6 +71,13 @@ app.add_middleware(
 # setup static and template
 app.mount('/static', StaticFiles(directory='static'), name='static')
 templates = Jinja2Templates(directory='templates')
+
+# icon source: https://icons8.com/icon/aMYEhwmQ2nm5/video-camera
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    file_name = "favicon.ico"
+    file_path = os.path.join(app.root_path, "static", "assets", file_name)
+    return FileResponse(file_path)
 
 @app.get('/', response_class=HTMLResponse)
 async def index(request: Request):

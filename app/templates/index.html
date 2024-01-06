@@ -43,24 +43,6 @@
     </table>
 
     <div id="options-and-filters" style="margin-top: 20px;">
-      <div id="cartoonifier-form">
-        <label>Select Cartoonifier Option:</label>
-        <div>
-          <label>
-            <input type="radio" name="cartoonifier-option" value="disable" checked> Disable
-          </label>
-        </div>
-        <div>
-          <label>
-            <input type="radio" name="cartoonifier-option" value="opencv"> OpenCV
-          </label>
-        </div>
-        <div>
-          <label>
-            <input type="radio" name="cartoonifier-option" value="cartoongan"> CartoonGAN
-          </label>
-        </div>
-      </div>
 
       <div id="image-filters" style="margin-top: 20px;">
         <div style="font-weight: bold;">Image filters:</div>
@@ -88,6 +70,26 @@
 
         <button id="reset-filters" onclick="resetFilters()" style="margin-top: 10px;">Reset to Default</button>
       </div>
+
+      <div id="cartoonifier-form">
+        <label>Select Cartoonifier Option:</label>
+        <div>
+          <label>
+            <input type="radio" name="cartoonifier-option" value="disable" checked> Disable
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="radio" name="cartoonifier-option" value="opencv"> OpenCV
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="radio" name="cartoonifier-option" value="cartoongan"> CartoonGAN
+          </label>
+        </div>
+      </div>
+
     </div>
 
     <div id="gallery-container" style="margin-top: 20px;">

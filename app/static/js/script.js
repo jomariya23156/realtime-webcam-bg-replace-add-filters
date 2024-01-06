@@ -83,6 +83,8 @@ const startImageProcessing = (video, canvas, image, deviceId, sessionToken) => {
             const ctx = canvas.getContext("2d");
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
+            // apply image filters
+            ctx.filter = video.style.filter;
             ctx.drawImage(video, 0, 0);
 
             // convert it to JPEG and send it to the websocket
@@ -156,7 +158,7 @@ radioOptions.forEach((radio) =>
 
 function submitCartoonifierOption(event) {
   const selectedOption = event.target.value;
-  const apiUrl = `http://localhost:8000/change_cartoonify/${selectedOption}`;
+  const apiUrl = `http://${location.host}/change_cartoonify/${selectedOption}`;
   const headers = new Headers();
   headers.append("X-Session-Token", uniqToken);
 
@@ -195,7 +197,7 @@ async function submitImageBg() {
   }
 
   // Make a POST request to the API endpoint
-  const apiUrl = "http://127.0.0.1:8000/change_bg";
+  const apiUrl = `http://${location.host}/change_bg`;
   const formData = new FormData();
   formData.append("file", blob, "image.jpg");
   const headers = new Headers();
@@ -225,7 +227,7 @@ function requestResetBg(event) {
     previewContainer.removeChild(child);
   }
 
-  const apiUrl = "http://localhost:8000/reset_bg";
+  const apiUrl = `http://${location.host}/reset_bg`;
   const headers = new Headers();
   headers.append("X-Session-Token", uniqToken);
 
