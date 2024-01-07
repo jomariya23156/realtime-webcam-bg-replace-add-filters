@@ -37,7 +37,11 @@ def get_current_session_vars(token: str = Depends(get_session_token)):
     return session_data[token]
 
 model_source = 'mediapipe' # 'mediapipe' or 'hugging_face'
-keep_obj_idxs = None # only for 'hugging_face'
+# keep_obj_idxs -> only for 'hugging_face', 
+# use to set class idices to include in mask segmentation
+keep_obj_idxs = None 
+
+# bg segmentation model
 if model_source == 'mediapipe':
     pred_model = MPSelfieSegmentation()
 elif model_source == 'hugging_face':
