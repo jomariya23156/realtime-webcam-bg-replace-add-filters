@@ -3,7 +3,7 @@
 Zoom-like feature: Real-time webcam background replacement with a Web UI + Cartoonification + Image filters implemented with FastAPI using WebSocket. (Also, utilizes JavaScript for frontend functionalities)
 
 ## Demo:
-YouTube video: https://youtu.be/00FC_3qZmZc  
+Full demo on YouTube: https://youtu.be/00FC_3qZmZc  
 *I'm running on Mac M1 (no gpu+recording). So, it looks quite delayed especially when applying the CartoonGAN (Deep Learning model). But in general, the model/method is fast and efficient enough to run in realtime. You can try it yourself :)  
 <img src="./assets/preview.gif">
 
